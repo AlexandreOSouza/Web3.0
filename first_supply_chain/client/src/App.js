@@ -51,8 +51,20 @@ const App = () => {
   connect();
   }, []);
 
+  useEffect(() => {
+    if (itemManager) {
+      itemManager.events.SupplyChainStep().on("data", async evt => {
+        const itemObj = await itemManager.methods.items(evt.returnValues._itemIndex).call();
+        if (itemObj._state === "1") {
+          alert("Item: " + itemObj._identifier + " was paid, deliver it now!");
+        }
+      });  
+    }
+  }, [itemManager]);
+
   const handleSubmit = async () => {
-    await itemManager.methods.createItem(itemName, coast).send({ from: accounts[0] });
+    const result = await itemManager.methods.createItem(itemName, coast).send({ from: accounts[0] });
+    alert('Send: ' + coast + ' Wei to ' + result.events.SupplyChainStep.returnValues._itemAddress)
   }
 
   const EventTrigger = useMemo(() => {
