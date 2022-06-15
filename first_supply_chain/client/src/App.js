@@ -1,73 +1,94 @@
-import React, { Component } from "react";
-import SimpleStorageContract from "./contracts/SimpleStorage.json";
+import React, { useEffect, useMemo, useState } from "react";
+import ItemManagerContract from "./contracts/ItemManager.json";
+import ItemContract from "./contracts/Item.json";
 import getWeb3 from "./getWeb3";
 
-import "./App.css";
+const App = () => {
 
-class App extends Component {
-  state = { storageValue: 0, web3: null, accounts: null, contract: null };
+  const [item, setItem] = useState();
+  const [itemManager, setItemManager] = useState();
+  const [web3, setWeb3] = useState();
+  const [accounts, setAccounts] = useState();
+  const [loaded, setLoaded] = useState(false);
+  const [coast, setCoast] = useState(0);
+  const [itemName, setItemName] = useState("");
 
-  componentDidMount = async () => {
-    try {
-      // Get network provider and web3 instance.
-      const web3 = await getWeb3();
+  useEffect(() => {
+    async function connect() {
+      try {
+        // Get network provider and web3 instance.
+        const web3 = await getWeb3();
 
-      // Use web3 to get the user's accounts.
-      const accounts = await web3.eth.getAccounts();
+        // Use web3 to get the user's accounts.
+        const accounts = await web3.eth.getAccounts();
 
-      // Get the contract instance.
-      const networkId = await web3.eth.net.getId();
-      const deployedNetwork = SimpleStorageContract.networks[networkId];
-      const instance = new web3.eth.Contract(
-        SimpleStorageContract.abi,
-        deployedNetwork && deployedNetwork.address,
-      );
+        // Get the contract instance.
+        const networkId = await web3.eth.net.getId();
 
-      // Set web3, accounts, and contract to the state, and then proceed with an
-      // example of interacting with the contract's methods.
-      this.setState({ web3, accounts, contract: instance }, this.runExample);
-    } catch (error) {
-      // Catch any errors for any of the above operations.
-      alert(
-        `Failed to load web3, accounts, or contract. Check console for details.`,
-      );
-      console.error(error);
+        const ItemManager = new web3.eth.Contract(
+          ItemManagerContract.abi,
+          ItemManagerContract.networks[networkId] && ItemManagerContract.networks[networkId].address,
+        );
+
+        const Item = new web3.eth.Contract(
+          ItemContract.abi,
+          ItemContract.networks[networkId] && ItemContract.networks[networkId].address,
+        );
+
+          setItemManager(ItemManager);
+          setItem(Item);
+          setWeb3(web3);
+          setAccounts(accounts);
+          setLoaded(true);
+      } catch (error) {
+        // Catch any errors for any of the above operations.
+        alert(
+          `Failed to load web3, accounts, or contract. Check console for details.`,
+        );
+        console.error(error);
+      }
     }
-  };
+  connect();
+  }, []);
 
-  runExample = async () => {
-    const { accounts, contract } = this.state;
-
-    // Stores a given value, 5 by default.
-    await contract.methods.set(5).send({ from: accounts[0] });
-
-    // Get the value from the contract to prove it worked.
-    const response = await contract.methods.get().call();
-
-    // Update state with the result.
-    this.setState({ storageValue: response });
-  };
-
-  render() {
-    if (!this.state.web3) {
-      return <div>Loading Web3, accounts, and contract...</div>;
-    }
-    return (
-      <div className="App">
-        <h1>Good to Go!</h1>
-        <p>Your Truffle Box is installed and ready.</p>
-        <h2>Smart Contract Example</h2>
-        <p>
-          If your contracts compiled and migrated successfully, below will show
-          a stored value of 5 (by default).
-        </p>
-        <p>
-          Try changing the value stored on <strong>line 42</strong> of App.js.
-        </p>
-        <div>The stored value is: {this.state.storageValue}</div>
-      </div>
-    );
+  const handleSubmit = async () => {
+    await itemManager.methods.createItem(itemName, coast).send({ from: accounts[0] });
   }
+
+  const EventTrigger = useMemo(() => {
+    return (
+      <>
+        <h1>Event Trigger / Supply Chain Example</h1>
+        <h2>Items</h2>
+        <h2>Add items</h2>
+        Const in Wei: <input type="text" name="cost" value={coast} onChange={e => setCoast(e.target.value)} />
+        Item identifier: <input type="text" name="itemName" value={itemName}  onChange={e => setItemName(e.target.value)}/>
+        <button type="button" onClick={handleSubmit}>Create new Item</button>
+      </>
+    )
+  }, [item, coast, itemName]);
+
+  return (
+    {loaded} ? (
+      EventTrigger
+    ) : (
+      <h1>loading...</h1>
+    )
+  )
 }
+  // runExample = async () => {
+  //   const { accounts, contract } = this.state;
+
+  //   // Stores a given value, 5 by default.
+  //   await contract.methods.set(5).send({ from: accounts[0] });
+
+  //   // Get the value from the contract to prove it worked.
+  //   const response = await contract.methods.get().call();
+
+  //   // Update state with the result.
+  //   this.setState({ storageValue: response });
+  // };
+
+// }
 
 export default App;
